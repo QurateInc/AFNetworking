@@ -117,11 +117,24 @@
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
 
-    [self setImageWithURLRequest:request placeholderImage:placeholderImage success:nil failure:nil];
+    [self setImageWithURLRequest:request placeholderImage:placeholderImage downloadProgressBlock:nil success:nil failure:nil];
 }
 
 - (void)setImageWithURLRequest:(NSURLRequest *)urlRequest
               placeholderImage:(UIImage *)placeholderImage
+                       success:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image))success
+                       failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure
+{
+	[self setImageWithURLRequest:urlRequest
+				placeholderImage:placeholderImage
+				downloadProgressBlock:nil
+				success:success
+				failure:failure];
+}
+
+- (void)setImageWithURLRequest:(NSURLRequest *)urlRequest
+              placeholderImage:(UIImage *)placeholderImage
+		 downloadProgressBlock:(void (^)(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead))downloadProgressBlock
                        success:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image))success
                        failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure
 {
@@ -144,6 +157,7 @@
         __weak __typeof(self)weakSelf = self;
         self.af_imageRequestOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
         self.af_imageRequestOperation.responseSerializer = self.imageResponseSerializer;
+        [self.af_imageRequestOperation setDownloadProgressBlock:downloadProgressBlock];
         [self.af_imageRequestOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
             __strong __typeof(weakSelf)strongSelf = weakSelf;
             if ([[urlRequest URL] isEqual:[strongSelf.af_imageRequestOperation.request URL]]) {
